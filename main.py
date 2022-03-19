@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from skimage.data import shepp_logan_phantom
-from skimage.transform import radon, iradon, rescale
+from skimage.transform import radon, iradon, rescale, iradon_sart
 import argparse
 import cv2
 from pathlib import Path
@@ -61,7 +61,7 @@ def create_sinograms(args):
         plt.show()
 
     return results
-def reconstruction(args, sinograms):
+def fbp_reconstruction(args, sinograms):
     """
     :param args:
     :type args:
@@ -90,9 +90,37 @@ def reconstruction(args, sinograms):
         ax2.set_title("Reconstruction error\nFiltered back projection")
         ax2.imshow(reconstruction_fbp - image, cmap=plt.cm.Greys_r, **imkwargs)
         plt.show()
+def sart_reconstruction(args, sinograms):
+
+    for sinogram, theta, image, _ in sinograms:
+
+        for iteration in range(args.num_iterations_in_sart_reco):
+
+            if iteration == 0:
+                reconstruction_sart = iradon_sart(sinogram, theta=theta)
+
+            else:
+                reconstruction_sart = iradon_sart(
+                    sinogram,
+                    theta=theta,
+                    image=reconstruction_sart
+                )
+
+            error = reconstruction_sart - image
+            print(f'SART iteration: {iteration} rms reconstruction error: '
+                  f'{np.sqrt(np.mean(error ** 2)):.3g}')
+
+        fig, axes = plt.subplots(1, 2, figsize=(8, 8.5), sharex=False, sharey=False)
+        ax = axes.ravel()
+
+        ax[0].set_title(f"Reconstruction\nSART\n iterations:{iteration+1}")
+        ax[0].imshow(reconstruction_sart, cmap=plt.cm.Greys_r)
+
+        plt.show()
 def main(args):
     sinograms = create_sinograms(args)
-    reconstruction(args, sinograms)
+    # fbp_reconstruction(args, sinograms)
+    sart_reconstruction(args, sinograms)
 
 if __name__ == '__main__':
     __file__ = 'main.py'
@@ -103,9 +131,10 @@ if __name__ == '__main__':
                         help='projection angels, can be [18, 24, 90, ...]')
     parser.add_argument('--path_rectangle', type=str, default=f'images/rectangle.jpg')
     parser.add_argument('--path_circle', type=str, default=f'images/circle.jpg')
-    parser.add_argument('--filter', type=str, default=f'ramp',
-                        help="can be: ['ramp', 'shepp-logan', 'cosine', 'hamming', 'hann']")
-
+    parser.add_argument('--filter', type=str, default=None,
+                        help="can be: ['ramp', 'shepp-logan', 'cosine', 'hamming', 'hann'], None for no filter")
+    parser.add_argument('--num_iterations_in_sart_reco', type=int, default=4)
+    "================================================================================="
     args = parser.parse_known_args()[0]
-
+    "================================================================================="
     main(args)
