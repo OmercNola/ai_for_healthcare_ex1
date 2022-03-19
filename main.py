@@ -119,7 +119,7 @@ def sart_reconstruction(args, sinograms):
         plt.show()
 def main(args):
     sinograms = create_sinograms(args)
-    # fbp_reconstruction(args, sinograms)
+    fbp_reconstruction(args, sinograms)
     sart_reconstruction(args, sinograms)
 
 if __name__ == '__main__':
