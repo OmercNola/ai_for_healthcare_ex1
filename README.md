@@ -1,1 +1,1 @@
-# ai_for_healthcare_ex1
+# AI_for_healthcare_ex1
